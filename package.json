@@ -1,9 +1,9 @@
 {
-  "private": true,
-  "displayName": "Homebridge Skyfan Ceiling Fan",
-  "name": "homebridge-skyfan-ceiling-fan",
+  "private": false,
+  "displayName": "Homebridge Ventair Skyfan DC",
+  "name": "homebridge-ventair-skyfandc",
   "version": "0.0.84",
-  "description": "Free the full potential of your ceiling fan with Homebridge",
+  "description": "Free the full potential of your Ventair Skyfan with Homebridge",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

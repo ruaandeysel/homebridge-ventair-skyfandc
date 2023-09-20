@@ -1,6 +1,6 @@
 import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
 
-import {HomebridgeSkyfanCeilingFan} from './platform';
+import {HomebridgeVentairSkyfanDC} from './platform';
 import TuyAPI from 'tuyapi';
 import TuyaDevice, {DPSObject} from 'tuyapi';
 
@@ -18,7 +18,7 @@ export class ToggleCeilingFanAccessory {
   };
 
   constructor(
-    private readonly platform: HomebridgeSkyfanCeilingFan,
+    private readonly platform: HomebridgeVentairSkyfanDC,
     private readonly accessory: PlatformAccessory,
   ) {
     const device = new TuyAPI({

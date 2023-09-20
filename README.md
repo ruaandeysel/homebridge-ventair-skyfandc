@@ -1,7 +1,7 @@
 
 ![ceiling-fan.jpg](readme/ceiling-fan.jpg)
 
-# CREATE Ceiling Fan
+# Ventair Skyfan DC Ceiling Fan
 
 Control your Skyfan DC Ceiling Fan from HomeKit.
 - Turn on/off
@@ -10,12 +10,9 @@ Control your Skyfan DC Ceiling Fan from HomeKit.
 - Set light on/off
 - Set light brightness
 
-![homekit-1.png](readme/homekit-1.png)
-![homekit-2.png](readme/homekit-2.png)
-
 ## Installation
 
-Go to the Homebridge UI, Plugins screen and search for `homebridge-skyfan-ceiling-fan`. Install the plugin and use the form to configure it.
+Go to the Homebridge UI, Plugins screen and search for `homebridge-ventair-skyfandc`. Install the plugin and use the form to configure it.
 
 
 ### Optional
@@ -34,4 +31,4 @@ To get your `Id` and `Key` ceiling fan, follow the instructions [Getting your ke
 
 - [tuyapi](https://github.com/codetheweb/tuyapi)
 - @marsuboss
-# homebridge-skyfan-fan
+# homebridge-ventair-skyfandc

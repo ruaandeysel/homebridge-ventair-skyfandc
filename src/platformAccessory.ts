@@ -1,6 +1,6 @@
 import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
 
-import {HomebridgeSkyfanCeilingFan} from './platform';
+import {HomebridgeVentairSkyfanDC} from './platform';
 import TuyAPI from 'tuyapi';
 import TuyaDevice, {DPSObject} from 'tuyapi';
 
@@ -20,7 +20,7 @@ export class CeilingFanAccessory {
   };
 
   constructor(
-    private readonly platform: HomebridgeSkyfanCeilingFan,
+    private readonly platform: HomebridgeVentairSkyfanDC,
     private readonly accessory: PlatformAccessory,
   ) {
     const device = new TuyAPI({
@@ -36,8 +36,8 @@ export class CeilingFanAccessory {
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Skyfan DC')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Skyfan DC-no light')
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Ventair')
+      .setCharacteristic(this.platform.Characteristic.Model, 'Skyfan DC')
       .setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name)
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.id);
 
