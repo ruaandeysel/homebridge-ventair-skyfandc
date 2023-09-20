@@ -50,11 +50,11 @@ export class CeilingFanAccessory {
     this.fanService.getCharacteristic(this.platform.Characteristic.On)
       .onSet(async (value: CharacteristicValue) => {
         this.state.fanOn = value.valueOf() as boolean;
-        await device.set({dps: 16, set: this.state.fanOn, shouldWaitForResponse: false});
+        await device.set({dps: 1, set: this.state.fanOn, shouldWaitForResponse: false});
       })
       .onGet(() => this.state.fanOn);
     const stateHook = (data: DPSObject) => {
-      const isOn = data.dps['16'] as boolean | undefined;
+      const isOn = data.dps['1'] as boolean | undefined;
       if (isOn !== undefined) {
         this.state.fanOn = isOn;
         this.platform.log.info('Update fan on', this.state.fanOn);
@@ -88,7 +88,7 @@ export class CeilingFanAccessory {
     this.fanService.getCharacteristic(this.platform.Characteristic.RotationSpeed)
       .onSet(async (value: CharacteristicValue) => {
         if (value.valueOf() === 0) {
-          await device.set({dps: 16, set: false, shouldWaitForResponse: false});
+          await device.set({dps: 1, set: false, shouldWaitForResponse: false});
         } else {
           this.state.fanSpeed = value.valueOf() as number;
           await device.set({dps: 3, set:  this.toStep(this.state.fanSpeed), shouldWaitForResponse: false});

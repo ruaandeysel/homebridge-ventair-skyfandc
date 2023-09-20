@@ -40,11 +40,11 @@ export class ToggleCeilingFanAccessory {
       .onSet(async (value: CharacteristicValue) => {
         const receivedValue = value.valueOf() as boolean;
         this.state.fanOn = this.state.fanOn && receivedValue ? false : receivedValue;
-        await device.set({dps: 16, set: this.state.fanOn, shouldWaitForResponse: false});
+        await device.set({dps: 1, set: this.state.fanOn, shouldWaitForResponse: false});
       })
       .onGet(() => this.state.fanOn);
     const stateHook = (data: DPSObject) => {
-      const isOn = data.dps['16'] as boolean | undefined;
+      const isOn = data.dps['1'] as boolean | undefined;
       if (isOn !== undefined) {
         this.state.fanOn = isOn;
         this.platform.log.info('Update fan on', this.state.fanOn);
