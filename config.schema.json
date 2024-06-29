@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "HomebridgeVentairSkyfanDC",
+  "pluginAlias": "HomebridgeSkyfanDCCeilingFan",
   "pluginType": "platform",
   "singular": true,
   "schema": {
@@ -9,7 +9,7 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Skyfan DC"
+        "default": "Skyfan DC Ceiling Fan"
       },
       "devices": {
         "type": "array",
@@ -29,23 +29,31 @@
               "description": "Tuya device key",
               "required": true
             },
+            "ip": {
+              "type": "string",
+              "title": "IP",
+              "description": "Tuya device IP",
+              "required": false
+            },
+            "version": {
+              "type": "string",
+              "title": "Version",
+              "description": "Tuya device version",
+              "default": "3.3",
+              "required": false
+            },
             "name": {
               "type": "string",
               "title": "Device Name",
               "description": "Name of the device",
-              "required": true
+              "required": true,
+              "default": "Ventair Skyfan DC Ceiling Fan"
             },
             "hasLight": {
               "type": "boolean",
               "title": "Has Light",
-              "description": "Device has a light?",
+              "description": "Device has a light ?",
               "required": true
-            },
-            "withToggle": {
-              "type": "boolean",
-              "title": "Add toggle switch for light and fan",
-              "description": "Check true if you have a toggle switch (switch with 1 click)",
-              "required": false
             }
           }
         }
