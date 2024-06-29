@@ -1,11 +1,11 @@
-import {API} from 'homebridge';
+import { API } from 'homebridge';
 
-import {PLATFORM_NAME} from './settings';
-import {HomebridgeVentairSkyfanDC} from './platform';
+import { PLATFORM_NAME } from './settings';
+import { HomebridgeCreateCeilingFan } from './platform';
 
 /**
  * This method registers the platform with Homebridge
  */
-export = (api: API) => {
-  api.registerPlatform(PLATFORM_NAME, HomebridgeVentairSkyfanDC);
+export default (api: API) => {
+  api.registerPlatform(PLATFORM_NAME, HomebridgeCreateCeilingFan);
 };
