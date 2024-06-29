@@ -43,7 +43,7 @@ export class CeilingFanAccessory {
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'CECOTEC')
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'SKYFAN')
       .setCharacteristic(this.platform.Characteristic.Model, 'Ceiling Fan')
       .setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name)
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.id);
@@ -81,7 +81,7 @@ export class CeilingFanAccessory {
       .onSet(async (value: CharacteristicValue) => {
         this.state.rotationDirection = value.valueOf() as number;
         await device.set({
-          dps: 4,
+          dps: 8,
           set: this.state.rotationDirection === this.platform.Characteristic.RotationDirection.CLOCKWISE ? 'forward' : 'reverse',
           shouldWaitForResponse: false,
         });
@@ -89,7 +89,7 @@ export class CeilingFanAccessory {
       .onGet(() => this.state.rotationDirection);
 
     const rotationHook = (data: DPSObject) => {
-      const rotation = data.dps['4'] as string | undefined;
+      const rotation = data.dps['8'] as string | undefined;
       if (rotation !== undefined) {
         this.state.rotationDirection = rotation === 'forward'
           ? this.platform.Characteristic.RotationDirection.CLOCKWISE
@@ -109,7 +109,7 @@ export class CeilingFanAccessory {
         const speedStep = this.toStep(speedPercent);
         this.state.rotationSpeedStep = speedStep;
 
-        await device.set({ dps: 4, set: speedStep, shouldWaitForResponse: false });
+        await device.set({ dps: 8, set: speedStep, shouldWaitForResponse: false });
 
         if (speedPercent === 0 && this.state.fanStatus === this.platform.Characteristic.Active.ACTIVE) {
           this.state.fanStatus = this.platform.Characteristic.Active.INACTIVE;
