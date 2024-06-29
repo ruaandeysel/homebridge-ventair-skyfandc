@@ -2,14 +2,12 @@ import {API, Categories, Characteristic, DynamicPlatformPlugin, Logger, Platform
 
 import {PLATFORM_NAME, PLUGIN_NAME} from './settings';
 import {CeilingFanAccessory} from './platformAccessory';
-import {ToggleCeilingFanAccessory} from './platformOptionalAccessory';
 
 interface DeviceConfig {
   id: string;
   key: string;
   name: string;
   hasLight: boolean;
-  withToggle: boolean;
 }
 
 /**
@@ -17,9 +15,9 @@ interface DeviceConfig {
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
  */
-export class HomebridgeVentairSkyfanDC implements DynamicPlatformPlugin {
-  public readonly Service: typeof Service = this.api.hap.Service;
-  public readonly Characteristic: typeof Characteristic = this.api.hap.Characteristic;
+export class HomebridgeCreateCeilingFan implements DynamicPlatformPlugin {
+  public readonly Service: typeof Service;
+  public readonly Characteristic: typeof Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
   private devices: DeviceConfig[] = [];
 
@@ -28,6 +26,9 @@ export class HomebridgeVentairSkyfanDC implements DynamicPlatformPlugin {
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
+
+    this.Service = this.api.hap.Service;
+    this.Characteristic = this.api.hap.Characteristic;
     // Check if the configuration contains devices
     if (config.devices && Array.isArray(config.devices)) {
       this.devices = config.devices;
@@ -61,23 +62,6 @@ export class HomebridgeVentairSkyfanDC implements DynamicPlatformPlugin {
         accessory.context.device = device;
         new CeilingFanAccessory(this, accessory);
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-      }
-
-      if (device.withToggle) {
-        const toggleUuid = this.api.hap.uuid.generate(`toggle-${device.id}`);
-        const existingToggleAccessory = this.accessories
-          .find(accessory => accessory.UUID === toggleUuid);
-        if(existingToggleAccessory) {
-          this.log.info('Restoring existing toggle accessory from cache:', existingToggleAccessory.displayName);
-          new ToggleCeilingFanAccessory(this, existingToggleAccessory);
-        } else {
-          this.log.info('Adding new toggle ceiling fan:', device.id, device.name, device.hasLight);
-          const toggleAccessoryId = this.api.hap.uuid.generate(`toggle-${device.id}`);
-          const toggleAccessory = new this.api.platformAccessory(`Toggle ${device.name}`, toggleAccessoryId, Categories.FAN);
-          toggleAccessory.context.device = device;
-          new ToggleCeilingFanAccessory(this, toggleAccessory);
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [toggleAccessory]);
-        }
       }
     }
   }
