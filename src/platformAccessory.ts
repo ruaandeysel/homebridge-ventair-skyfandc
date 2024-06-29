@@ -1,64 +1,76 @@
-import {CharacteristicValue, PlatformAccessory, Service} from 'homebridge';
+import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 
-import {HomebridgeVentairSkyfanDC} from './platform';
+import { HomebridgeCreateCeilingFan } from './platform';
 import TuyAPI from 'tuyapi';
-import TuyaDevice, {DPSObject} from 'tuyapi';
+import TuyaDevice, { DPSObject } from 'tuyapi';
 
 export class CeilingFanAccessory {
   private fanService!: Service;
   private lightService!: Service;
-  private lightToggleService!: Service;
-  private fanToggleService!: Service;
 
   private state = {
-    fanOn: false,
-    fanRotation: this.platform.Characteristic.RotationDirection.CLOCKWISE,
-    fanSpeed: 3,
+    fanStatus: 0,
+    rotationDirection: 0,
+    rotationSpeedStep: 1,
+    swingMode: 0,
     lightOn: false,
-    lightBrightness: 16,
-    lightColorTemperature: 19,
+    lightBrightness: 100,
   };
 
   constructor(
-    private readonly platform: HomebridgeVentairSkyfanDC,
+    private readonly platform: HomebridgeCreateCeilingFan,
     private readonly accessory: PlatformAccessory,
   ) {
     const device = new TuyAPI({
       id: accessory.context.device.id,
       key: accessory.context.device.key,
-      version: '3.3',
+      ip: accessory.context.device.ip,
+      version: accessory.context.device.version,
       issueRefreshOnConnect: true,
     });
 
 
-    device.on('disconnected', () => this.connect(device));
+    device.on('disconnected', () => {
+      this.platform.log.info('Disconnected... Try to connect');
+      this.connect(device);
+    });
+    device.on('error', error => {
+      this.platform.log.info('Error :', error);
+      this.platform.log.info('Try to connect');
+      this.connect(device);
+    });
 
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Ventair')
-      .setCharacteristic(this.platform.Characteristic.Model, 'Skyfan DC')
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'CECOTEC')
+      .setCharacteristic(this.platform.Characteristic.Model, 'Ceiling Fan')
       .setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name)
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.id);
 
     // Fan
-    this.fanService = this.accessory.getService(this.platform.Service.Fan) || this.accessory.addService(this.platform.Service.Fan);
+    this.fanService = this.accessory.getService(this.platform.Service.Fanv2) || this.accessory.addService(this.platform.Service.Fanv2);
     this.fanService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name);
 
 
     // Fan state
-    this.fanService.getCharacteristic(this.platform.Characteristic.On)
+    this.fanService.getCharacteristic(this.platform.Characteristic.Active)
       .onSet(async (value: CharacteristicValue) => {
-        this.state.fanOn = value.valueOf() as boolean;
-        await device.set({dps: 1, set: this.state.fanOn, shouldWaitForResponse: false});
+        this.state.fanStatus = value.valueOf() as number;
+        await device.set({
+          dps: 1,
+          set: this.state.fanStatus === this.platform.Characteristic.Active.ACTIVE ? true : false,
+          shouldWaitForResponse: false,
+        });
       })
-      .onGet(() => this.state.fanOn);
+      .onGet(() => this.state.fanStatus);
+
     const stateHook = (data: DPSObject) => {
-      const isOn = data.dps['1'] as boolean | undefined;
-      if (isOn !== undefined) {
-        this.state.fanOn = isOn;
-        this.platform.log.info('Update fan on', this.state.fanOn);
-        this.fanService.updateCharacteristic(this.platform.Characteristic.On, this.state.fanOn);
+      const isActive = data.dps['1'] as boolean | undefined;
+      if (isActive !== undefined) {
+        this.state.fanStatus = isActive ? this.platform.Characteristic.Active.ACTIVE : this.platform.Characteristic.Active.INACTIVE;
+        this.platform.log.info('Update: Fan status ', isActive ? 'on' : 'off');
+        this.fanService.updateCharacteristic(this.platform.Characteristic.Active, this.state.fanStatus);
       }
     };
     device.on('dp-refresh', stateHook);
@@ -67,18 +79,24 @@ export class CeilingFanAccessory {
     // Fan rotation
     this.fanService.getCharacteristic(this.platform.Characteristic.RotationDirection)
       .onSet(async (value: CharacteristicValue) => {
-        this.state.fanRotation = value.valueOf() as number;
-        await device.set({dps: 8, set:  this.state.fanRotation === 0 ? 'forward' : 'reverse', shouldWaitForResponse: false});
+        this.state.rotationDirection = value.valueOf() as number;
+        await device.set({
+          dps: 4,
+          set: this.state.rotationDirection === this.platform.Characteristic.RotationDirection.CLOCKWISE ? 'forward' : 'reverse',
+          shouldWaitForResponse: false,
+        });
       })
-      .onGet(() => this.state.fanRotation);
+      .onGet(() => this.state.rotationDirection);
+
     const rotationHook = (data: DPSObject) => {
-      const rotation = data.dps['8'] as string | undefined;
+      const rotation = data.dps['4'] as string | undefined;
       if (rotation !== undefined) {
-        this.state.fanRotation = rotation === 'forward'
+        this.state.rotationDirection = rotation === 'forward'
           ? this.platform.Characteristic.RotationDirection.CLOCKWISE
           : this.platform.Characteristic.RotationDirection.COUNTER_CLOCKWISE;
-        this.platform.log.info('Update fan rotation', this.state.fanRotation);
-        this.fanService.updateCharacteristic(this.platform.Characteristic.RotationDirection, this.state.fanRotation);
+        this.platform.log.info('Update: Fan rotation ',
+          this.state.rotationDirection === this.platform.Characteristic.RotationDirection.CLOCKWISE ? 'clockwise' : 'counter-clockwise');
+        this.fanService.updateCharacteristic(this.platform.Characteristic.RotationDirection, this.state.rotationDirection);
       }
     };
     device.on('dp-refresh', rotationHook);
@@ -87,25 +105,62 @@ export class CeilingFanAccessory {
     // Fan speed
     this.fanService.getCharacteristic(this.platform.Characteristic.RotationSpeed)
       .onSet(async (value: CharacteristicValue) => {
-        if (value.valueOf() === 0) {
-          await device.set({dps: 1, set: false, shouldWaitForResponse: false});
-        } else {
-          this.state.fanSpeed = value.valueOf() as number;
-          await device.set({dps: 3, set:  this.toStep(this.state.fanSpeed), shouldWaitForResponse: false});
+        const speedPercent = value.valueOf() as number;
+        const speedStep = this.toStep(speedPercent);
+        this.state.rotationSpeedStep = speedStep;
+
+        await device.set({ dps: 4, set: speedStep, shouldWaitForResponse: false });
+
+        if (speedPercent === 0 && this.state.fanStatus === this.platform.Characteristic.Active.ACTIVE) {
+          this.state.fanStatus = this.platform.Characteristic.Active.INACTIVE;
+          await device.set({ dps: 1, set: false, shouldWaitForResponse: false });
+        } else if (speedPercent > 0 && this.state.fanStatus === this.platform.Characteristic.Active.INACTIVE) {
+          this.state.fanStatus = this.platform.Characteristic.Active.ACTIVE;
         }
       })
-      .onGet(() => this.state.fanSpeed)
+      .onGet(() => this.state.rotationSpeedStep)
       .setProps({});
+
     const speedHook = (data: DPSObject) => {
       const speed = data.dps['3'] as number | undefined;
       if (speed !== undefined) {
-        this.state.fanSpeed = this.toPercent(this.state.fanSpeed, speed);
-        this.platform.log.info('Update fan speed', this.state.fanSpeed);
-        this.fanService.updateCharacteristic(this.platform.Characteristic.RotationSpeed, this.state.fanSpeed);
+        const percent = Math.floor(100 / 6 * speed);
+        this.state.rotationSpeedStep = speed;
+        this.platform.log.info('Update: Fan speed (', percent, '% | speed: ', speed, ')');
+        this.fanService.updateCharacteristic(this.platform.Characteristic.RotationSpeed, percent);
       }
     };
     device.on('dp-refresh', speedHook);
     device.on('data', speedHook);
+
+    // Swing mode
+    this.fanService.getCharacteristic(this.platform.Characteristic.SwingMode)
+      .onSet(async (value: CharacteristicValue) => {
+        const swingMode = value.valueOf() as number;
+        this.state.swingMode = swingMode;
+
+        await device.set({
+          dps: 2,
+          set: swingMode === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 'sleep' : 'nature',
+          shouldWaitForResponse: false,
+        });
+      })
+      .onGet(() => this.state.rotationSpeedStep)
+      .setProps({});
+
+    const swingHook = (data: DPSObject) => {
+      const swing = data.dps['2'] as string | undefined;
+      if (swing !== undefined) {
+        this.state.swingMode =
+          swing === 'sleep' ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED;
+        this.platform.log.info('Update: Fan swing ',
+          this.state.swingMode === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 'enabled' : 'disabled');
+        this.fanService.updateCharacteristic(this.platform.Characteristic.SwingMode, this.state.swingMode);
+      }
+    };
+    device.on('dp-refresh', swingHook);
+    device.on('data', swingHook);
+
 
     if (accessory.context.device.hasLight) {
       // Fan Light
@@ -115,7 +170,7 @@ export class CeilingFanAccessory {
       this.lightService.getCharacteristic(this.platform.Characteristic.On)
         .onSet(async (value: CharacteristicValue) => {
           this.state.lightOn = value.valueOf() as boolean;
-          await device.set({dps: 15, set: this.state.lightOn, shouldWaitForResponse: false});
+          await device.set({ dps: 15, set: this.state.lightOn, shouldWaitForResponse: false });
           await device.refresh({});
         })
         .onGet(() => this.state.lightOn);
@@ -124,7 +179,7 @@ export class CeilingFanAccessory {
         const isOn = data.dps['15'] as boolean | undefined;
         if (isOn !== undefined) {
           this.state.lightOn = isOn;
-          this.platform.log.info('Update light on', this.state.lightOn);
+          this.platform.log.info('Update: Light ', this.state.lightOn ? 'on' : 'off');
           this.lightService.updateCharacteristic(this.platform.Characteristic.On, this.state.lightOn);
         }
       };
@@ -134,11 +189,13 @@ export class CeilingFanAccessory {
       // Fan Light Brightness
       this.lightService.getCharacteristic(this.platform.Characteristic.Brightness)
         .onSet(async (value: CharacteristicValue) => {
-          if (value.valueOf() === 0) {
-            await device.set({dps: 15, set: false, shouldWaitForResponse: false});
-          } else {
-            this.state.lightBrightness = value.valueOf() as number;
-            await device.set({dps: 16, set: this.state.lightBrightness * 10, shouldWaitForResponse: false});
+          this.state.lightBrightness = value.valueOf() as number;
+          await device.set({ dps: 16, set: this.state.lightBrightness, shouldWaitForResponse: false });
+
+          if (this.state.lightBrightness === 0 && this.state.lightOn) {
+            await device.set({ dps: 15, set: false, shouldWaitForResponse: false });
+          } else if (this.state.lightBrightness > 0 && !this.state.lightOn) {
+            await device.set({ dps: 15, set: true, shouldWaitForResponse: false });
           }
         })
         .onGet(() => this.state.lightBrightness);
@@ -146,33 +203,13 @@ export class CeilingFanAccessory {
       const lightBrightnessHook = (data: DPSObject) => {
         const brightness = data.dps['16'] as number | undefined;
         if (brightness !== undefined) {
-          this.state.lightBrightness = brightness / 10;
-          this.platform.log.info('Update brightness', this.state.lightBrightness);
+          this.state.lightBrightness = brightness;
+          this.platform.log.info('Update: Brightness ', this.state.lightBrightness, '%');
           this.lightService.updateCharacteristic(this.platform.Characteristic.Brightness, this.state.lightBrightness);
         }
       };
       device.on('dp-refresh', lightBrightnessHook);
       device.on('data', lightBrightnessHook);
-
-
-      // Fan Light ColorTemperature
-      // this.lightService.getCharacteristic(this.platform.Characteristic.ColorTemperature)
-      //   .onSet(async (value: CharacteristicValue) => {
-      //     this.state.lightColorTemperature = value.valueOf() as number;
-      //     await device.set({dps: 23, set: this.convertTemperatureTuya(this.state.lightColorTemperature), shouldWaitForResponse: false});
-      //   })
-      //   .onGet(() => this.state.lightColorTemperature);
-      //
-      // const lightColorTemperatureHook = (data: DPSObject) => {
-      //   const colorTemperature = data.dps['23'] as number | undefined;
-      //   if (colorTemperature !== undefined) {
-      //     this.state.lightColorTemperature = this.convertTemperatureHomeKit(colorTemperature);
-      //     this.platform.log.info('Update colorTemperature', this.state.lightColorTemperature);
-      //     this.lightService.updateCharacteristic(this.platform.Characteristic.ColorTemperature, this.state.lightColorTemperature);
-      //   }
-      // };
-      // device.on('dp-refresh', lightColorTemperatureHook);
-      // device.on('data', lightColorTemperatureHook);
     }
 
     this.connect(device);
@@ -193,49 +230,8 @@ export class CeilingFanAccessory {
 
 
   toStep(percent: number) {
-    const etapes = [1, 2, 3, 4, 5, 6];
-    const etapeIndex = Math.floor(percent / 16.67); // 100 / 6 = 16.67
-    return etapes[etapeIndex];
-  }
-
-  toPercent(initialPercentage: number, step: number) {
-    const plagesPourcentage = [0, 15, 30, 50, 65, 80, 100];
-    const plageMin = plagesPourcentage[step - 1];
-    const plageMax = plagesPourcentage[step];
-    if (initialPercentage >= plageMin && initialPercentage <= plageMax) {
-      return initialPercentage;
-    }
-    if (step === 1) {
-      return 10;
-    }
-    if (step === 6) {
-      return 100;
-    }
-    return plageMin;
-  }
-
-  convertTemperatureHomeKit(tuyaValue: number) {
-    switch (tuyaValue) {
-      case 0:
-        return 140;
-      case 500:
-        return 320;
-      case 1000:
-        return 500;
-      default:
-        return 140;
-    }
-  }
-
-  convertTemperatureTuya(homekitValue: number) {
-    if (homekitValue >= 140 && homekitValue < 230) {
-      return 0;
-    } else if (homekitValue >= 230 && homekitValue < 430) {
-      return 500;
-    } else if (homekitValue >= 430 && homekitValue <= 500) {
-      return 1000;
-    } else {
-      return 0;
-    }
+    const validSpeeds = [0, 1, 2, 3, 4, 5, 6];
+    const stepIndex = Math.floor(percent / 16.67); // 100 / 6 = 16.67
+    return validSpeeds[stepIndex];
   }
 }
