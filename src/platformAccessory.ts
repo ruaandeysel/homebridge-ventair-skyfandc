@@ -43,7 +43,7 @@ export class CeilingFanAccessory {
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'SKYFAN')
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'VENTAIR')
       .setCharacteristic(this.platform.Characteristic.Model, 'Ceiling Fan')
       .setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name)
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.id);
