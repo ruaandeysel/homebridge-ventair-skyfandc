@@ -1,5 +1,5 @@
 {
-  "pluginAlias": "HomebridgeSkyfanDCCeilingFan",
+  "pluginAlias": "HomebridgeVentairCeilingFan",
   "pluginType": "platform",
   "singular": true,
   "schema": {
