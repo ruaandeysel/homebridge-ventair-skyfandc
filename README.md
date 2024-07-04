@@ -12,7 +12,7 @@ Control your Skyfan DC Ceiling Fan from HomeKit.
 
 ## Installation
 
-Go to the Homebridge UI, Plugins screen and search for `homebridge-ventair-skyfandc`. Install the plugin and use the form to configure it.
+Go to the Homebridge UI, Plugins screen and search for `homebridge-ventair-ceiling-fan`. Install the plugin and use the form to configure it.
 
 
 ### Optional
