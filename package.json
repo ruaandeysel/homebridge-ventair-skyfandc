@@ -1,17 +1,17 @@
 {
   "private": false,
-  "displayName": "Homebridge Skyfan DC Ceiling Fan",
-  "name": "homebridge-skyfandc-ceiling-fan",
+  "displayName": "Homebridge Ventair Skyfan DC Ceiling Fan",
+  "name": "homebridge-ventair-ceiling-fan",
   "version": "0.0.1",
-  "description": "A Homebridge plugin for Skyfan DC ceiling fan",
+  "description": "A Homebridge plugin for Ventair Skyfan DC ceiling fan",
   "license": "Apache-2.0",
   "type": "commonjs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/irsath/homebridge-cecotec-ceiling-fan.git"
+    "url": "git+https://github.com/domalab/homebridge-ventair-ceiling-fan.git"
   },
   "bugs": {
-    "url": "https://github.com/irsath/homebridge-cecotec-ceiling-fan/issues"
+    "url": "https://github.com/domalab/homebridge-ventair-ceiling-fan/issues"
   },
   "engines": {
     "node": "^18.17.0 || ^20.9.0",
