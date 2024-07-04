@@ -15,7 +15,7 @@ interface DeviceConfig {
  * This class is the main constructor for your plugin, this is where you should
  * parse the user config and discover/register accessories with Homebridge.
  */
-export class HomebridgeCreateCeilingFan implements DynamicPlatformPlugin {
+export class HomebridgeVentairCeilingFan implements DynamicPlatformPlugin {
   public readonly Service: typeof Service;
   public readonly Characteristic: typeof Characteristic;
   public readonly accessories: PlatformAccessory[] = [];
