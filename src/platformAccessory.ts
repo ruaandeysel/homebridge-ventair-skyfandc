@@ -1,6 +1,6 @@
 import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 
-import { HomebridgeCreateCeilingFan } from './platform';
+import { HomebridgeVentairCeilingFan } from './platform';
 import TuyAPI from 'tuyapi';
 import TuyaDevice, { DPSObject } from 'tuyapi';
 
@@ -18,7 +18,7 @@ export class CeilingFanAccessory {
   };
 
   constructor(
-    private readonly platform: HomebridgeCreateCeilingFan,
+    private readonly platform: HomebridgeVentairCeilingFan,
     private readonly accessory: PlatformAccessory,
   ) {
     const device = new TuyAPI({
@@ -43,7 +43,7 @@ export class CeilingFanAccessory {
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'VENTAIR')
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Ventair')
       .setCharacteristic(this.platform.Characteristic.Model, 'Ceiling Fan')
       .setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name)
       .setCharacteristic(this.platform.Characteristic.SerialNumber, accessory.context.device.id);
@@ -124,7 +124,7 @@ export class CeilingFanAccessory {
     const speedHook = (data: DPSObject) => {
       const speed = data.dps['3'] as number | undefined;
       if (speed !== undefined) {
-        const percent = Math.floor(100 / 6 * speed);
+        const percent = Math.floor(100 / 5 * speed);
         this.state.rotationSpeedStep = speed;
         this.platform.log.info('Update: Fan speed (', percent, '% | speed: ', speed, ')');
         this.fanService.updateCharacteristic(this.platform.Characteristic.RotationSpeed, percent);
@@ -230,8 +230,8 @@ export class CeilingFanAccessory {
 
 
   toStep(percent: number) {
-    const validSpeeds = [0, 1, 2, 3, 4, 5, 6];
-    const stepIndex = Math.floor(percent / 16.67); // 100 / 6 = 16.67
+    const validSpeeds = [0, 1, 2, 3, 4, 5];
+    const stepIndex = Math.floor(percent / 20); // 100 / 5 = 20
     return validSpeeds[stepIndex];
   }
 }
