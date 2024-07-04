@@ -1,9 +1,9 @@
 /**
  * This is the name of the platform that users will use to register the plugin in the Homebridge config.json
  */
-export const PLATFORM_NAME = 'HomebridgeSkyfanDCCeilingFan';
+export const PLATFORM_NAME = 'HomebridgeVentairCeilingFan';
 
 /**
  * This must match the name of your plugin as defined the package.json
  */
-export const PLUGIN_NAME = 'homebridge-skyfandc-ceiling-fan';
+export const PLUGIN_NAME = 'homebridge-ventair-ceiling-fan';
