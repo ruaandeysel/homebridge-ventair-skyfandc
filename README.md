@@ -23,4 +23,4 @@ To get your `Id` and `Key` ceiling fan, follow the instructions [Getting your ke
 
 - [tuyapi](https://github.com/codetheweb/tuyapi)
 - @marsuboss
-# homebridge-ventair-skyfandc
+# homebridge-ventair-ceiling-fan
