@@ -1,6 +1,7 @@
 import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
 import { HomebridgeVentairCeilingFan } from './platform';
 import TuyAPI from 'tuyapi';
+import TuyaDevice, { DPSObject } from 'tuyapi';
 
 export class CeilingFanAccessory {
   private fanService!: Service;
@@ -27,16 +28,17 @@ export class CeilingFanAccessory {
       issueRefreshOnConnect: true,
     });
 
+
     device.on('disconnected', () => {
       this.platform.log.info('Disconnected... Try to connect');
       this.connect(device);
     });
-
     device.on('error', error => {
-      this.platform.log.info('Error:', error);
+      this.platform.log.info('Error :', error);
       this.platform.log.info('Try to connect');
       this.connect(device);
     });
+
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -48,6 +50,7 @@ export class CeilingFanAccessory {
     // Fan
     this.fanService = this.accessory.getService(this.platform.Service.Fanv2) || this.accessory.addService(this.platform.Service.Fanv2);
     this.fanService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name);
+
 
     // Fan state
     this.fanService.getCharacteristic(this.platform.Characteristic.Active)
@@ -65,7 +68,7 @@ export class CeilingFanAccessory {
       const isActive = data.dps['1'] as boolean | undefined;
       if (isActive !== undefined) {
         this.state.fanStatus = isActive ? this.platform.Characteristic.Active.ACTIVE : this.platform.Characteristic.Active.INACTIVE;
-        this.platform.log.info('Update: Fan status', isActive ? 'on' : 'off');
+        this.platform.log.info('Update: Fan status ', isActive ? 'on' : 'off');
         this.fanService.updateCharacteristic(this.platform.Characteristic.Active, this.state.fanStatus);
       }
     };
@@ -90,7 +93,8 @@ export class CeilingFanAccessory {
         this.state.rotationDirection = rotation === 'forward'
           ? this.platform.Characteristic.RotationDirection.CLOCKWISE
           : this.platform.Characteristic.RotationDirection.COUNTER_CLOCKWISE;
-        this.platform.log.info('Update: Fan rotation', this.state.rotationDirection === this.platform.Characteristic.RotationDirection.CLOCKWISE ? 'clockwise' : 'counter-clockwise');
+        this.platform.log.info('Update: Fan rotation ',
+          this.state.rotationDirection === this.platform.Characteristic.RotationDirection.CLOCKWISE ? 'clockwise' : 'counter-clockwise');
         this.fanService.updateCharacteristic(this.platform.Characteristic.RotationDirection, this.state.rotationDirection);
       }
     };
@@ -111,7 +115,6 @@ export class CeilingFanAccessory {
           await device.set({ dps: 1, set: false, shouldWaitForResponse: false });
         } else if (speedPercent > 0 && this.state.fanStatus === this.platform.Characteristic.Active.INACTIVE) {
           this.state.fanStatus = this.platform.Characteristic.Active.ACTIVE;
-          await device.set({ dps: 1, set: true, shouldWaitForResponse: false });
         }
       })
       .onGet(() => this.state.rotationSpeedStep)
@@ -122,7 +125,7 @@ export class CeilingFanAccessory {
       if (speed !== undefined) {
         const percent = Math.floor(100 / 5 * speed);
         this.state.rotationSpeedStep = speed;
-        this.platform.log.info('Update: Fan speed (', percent, '% | speed:', speed, ')');
+        this.platform.log.info('Update: Fan speed (', percent, '% | speed: ', speed, ')');
         this.fanService.updateCharacteristic(this.platform.Characteristic.RotationSpeed, percent);
       }
     };
@@ -141,21 +144,25 @@ export class CeilingFanAccessory {
           shouldWaitForResponse: false,
         });
       })
-      .onGet(() => this.state.swingMode)
+      .onGet(() => this.state.rotationSpeedStep)
       .setProps({});
 
     const swingHook = (data: DPSObject) => {
       const swing = data.dps['2'] as string | undefined;
       if (swing !== undefined) {
-        this.state.swingMode = swing === 'sleep' ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED;
-        this.platform.log.info('Update: Fan swing', this.state.swingMode === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 'enabled' : 'disabled');
+        this.state.swingMode =
+          swing === 'sleep' ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED;
+        this.platform.log.info('Update: Fan swing ',
+          this.state.swingMode === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 'enabled' : 'disabled');
         this.fanService.updateCharacteristic(this.platform.Characteristic.SwingMode, this.state.swingMode);
       }
     };
     device.on('dp-refresh', swingHook);
     device.on('data', swingHook);
 
+
     if (accessory.context.device.hasLight) {
+      
       // Fan Light
       this.lightService = this.accessory.getService(this.platform.Service.Lightbulb)
         || this.accessory.addService(this.platform.Service.Lightbulb);
@@ -172,7 +179,7 @@ export class CeilingFanAccessory {
         const isOn = data.dps['15'] as boolean | undefined;
         if (isOn !== undefined) {
           this.state.lightOn = isOn;
-          this.platform.log.info('Update: Light', this.state.lightOn ? 'on' : 'off');
+          this.platform.log.info('Update: Light ', this.state.lightOn ? 'on' : 'off');
           this.lightService.updateCharacteristic(this.platform.Characteristic.On, this.state.lightOn);
         }
       };
@@ -197,7 +204,7 @@ export class CeilingFanAccessory {
         const brightness = data.dps['16'] as number | undefined;
         if (brightness !== undefined) {
           this.state.lightBrightness = brightness;
-          this.platform.log.info('Update: Brightness', this.state.lightBrightness, '%');
+          this.platform.log.info('Update: Brightness ', this.state.lightBrightness, '%');
           this.lightService.updateCharacteristic(this.platform.Characteristic.Brightness, this.state.lightBrightness);
         }
       };
@@ -208,7 +215,7 @@ export class CeilingFanAccessory {
     this.connect(device);
   }
 
-  async connect(device: TuyAPI) {
+  async connect(device: TuyaDevice) {
     try {
       this.platform.log.info('Connecting...');
       await device.find();
@@ -220,6 +227,7 @@ export class CeilingFanAccessory {
       setTimeout(() => this.connect(device), 60000);
     }
   }
+
 
   toStep(percent: number) {
     const validSpeeds = [0, 1, 2, 3, 4, 5];
