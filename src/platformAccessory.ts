@@ -1,5 +1,4 @@
 import { CharacteristicValue, PlatformAccessory, Service } from 'homebridge';
-
 import { HomebridgeVentairCeilingFan } from './platform';
 import TuyAPI from 'tuyapi';
 import TuyaDevice, { DPSObject } from 'tuyapi';
@@ -109,7 +108,7 @@ export class CeilingFanAccessory {
         const speedStep = this.toStep(speedPercent);
         this.state.rotationSpeedStep = speedStep;
 
-        await device.set({ dps: 8, set: speedStep, shouldWaitForResponse: false });
+        await device.set({ dps: 3, set: speedStep, shouldWaitForResponse: false });
 
         if (speedPercent === 0 && this.state.fanStatus === this.platform.Characteristic.Active.ACTIVE) {
           this.state.fanStatus = this.platform.Characteristic.Active.INACTIVE;
@@ -163,6 +162,7 @@ export class CeilingFanAccessory {
 
 
     if (accessory.context.device.hasLight) {
+      
       // Fan Light
       this.lightService = this.accessory.getService(this.platform.Service.Lightbulb)
         || this.accessory.addService(this.platform.Service.Lightbulb);
