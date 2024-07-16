@@ -28,7 +28,6 @@ export class CeilingFanAccessory {
       issueRefreshOnConnect: true,
     });
 
-
     device.on('disconnected', () => {
       this.platform.log.info('Disconnected... Try to connect');
       this.connect(device);
@@ -38,7 +37,6 @@ export class CeilingFanAccessory {
       this.platform.log.info('Try to connect');
       this.connect(device);
     });
-
 
     // Information
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
@@ -51,14 +49,13 @@ export class CeilingFanAccessory {
     this.fanService = this.accessory.getService(this.platform.Service.Fanv2) || this.accessory.addService(this.platform.Service.Fanv2);
     this.fanService.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name);
 
-
     // Fan state
     this.fanService.getCharacteristic(this.platform.Characteristic.Active)
       .onSet(async (value: CharacteristicValue) => {
         this.state.fanStatus = value.valueOf() as number;
         await device.set({
           dps: 1,
-          set: this.state.fanStatus === this.platform.Characteristic.Active.ACTIVE ? true : false,
+          set: this.state.fanStatus === this.platform.Characteristic.Active.ACTIVE,
           shouldWaitForResponse: false,
         });
       })
@@ -105,7 +102,7 @@ export class CeilingFanAccessory {
     this.fanService.getCharacteristic(this.platform.Characteristic.RotationSpeed)
       .onSet(async (value: CharacteristicValue) => {
         const speedPercent = value.valueOf() as number;
-        const speedStep = this.toStep(speedPercent);
+        const speedStep = Math.round((speedPercent / 100) * 4) + 1; // Map 0-100 to 1-5
         this.state.rotationSpeedStep = speedStep;
 
         await device.set({ dps: 3, set: speedStep, shouldWaitForResponse: false });
@@ -117,13 +114,15 @@ export class CeilingFanAccessory {
           this.state.fanStatus = this.platform.Characteristic.Active.ACTIVE;
         }
       })
-      .onGet(() => this.state.rotationSpeedStep)
-      .setProps({});
+      .onGet(() => {
+        // Convert 1-5 step to 0-100 percent
+        return Math.round(((this.state.rotationSpeedStep - 1) / 4) * 100);
+      });
 
     const speedHook = (data: DPSObject) => {
       const speed = data.dps['3'] as number | undefined;
       if (speed !== undefined) {
-        const percent = Math.floor(100 / 5 * speed);
+        const percent = Math.round(((speed - 1) / 4) * 100); // Map 1-5 to 0-100
         this.state.rotationSpeedStep = speed;
         this.platform.log.info('Update: Fan speed (', percent, '% | speed: ', speed, ')');
         this.fanService.updateCharacteristic(this.platform.Characteristic.RotationSpeed, percent);
@@ -132,37 +131,55 @@ export class CeilingFanAccessory {
     device.on('dp-refresh', speedHook);
     device.on('data', speedHook);
 
-    // Swing mode
+    // Swing mode (representing fan modes)
     this.fanService.getCharacteristic(this.platform.Characteristic.SwingMode)
       .onSet(async (value: CharacteristicValue) => {
         const swingMode = value.valueOf() as number;
         this.state.swingMode = swingMode;
 
+        let mode: string;
+        switch (swingMode) {
+          case this.platform.Characteristic.SwingMode.SWING_ENABLED:
+            mode = 'nature';
+            break;
+          case this.platform.Characteristic.SwingMode.SWING_DISABLED:
+            mode = 'smart';
+            break;
+          default:
+            mode = 'sleep';
+        }
+
         await device.set({
           dps: 2,
-          set: swingMode === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 'sleep' : 'nature',
+          set: mode,
           shouldWaitForResponse: false,
         });
       })
-      .onGet(() => this.state.rotationSpeedStep)
-      .setProps({});
+      .onGet(() => this.state.swingMode);
 
     const swingHook = (data: DPSObject) => {
-      const swing = data.dps['2'] as string | undefined;
-      if (swing !== undefined) {
-        this.state.swingMode =
-          swing === 'sleep' ? this.platform.Characteristic.SwingMode.SWING_ENABLED : this.platform.Characteristic.SwingMode.SWING_DISABLED;
-        this.platform.log.info('Update: Fan swing ',
-          this.state.swingMode === this.platform.Characteristic.SwingMode.SWING_ENABLED ? 'enabled' : 'disabled');
+      const mode = data.dps['2'] as string | undefined;
+      if (mode !== undefined) {
+        switch (mode) {
+          case 'nature':
+            this.state.swingMode = this.platform.Characteristic.SwingMode.SWING_ENABLED;
+            break;
+          case 'smart':
+            this.state.swingMode = this.platform.Characteristic.SwingMode.SWING_DISABLED;
+            break;
+          case 'sleep':
+            // HomeKit doesn't have a third mode, so we'll use SWING_DISABLED for sleep as well
+            this.state.swingMode = this.platform.Characteristic.SwingMode.SWING_DISABLED;
+            break;
+        }
+        this.platform.log.info('Update: Fan mode ', mode);
         this.fanService.updateCharacteristic(this.platform.Characteristic.SwingMode, this.state.swingMode);
       }
     };
     device.on('dp-refresh', swingHook);
     device.on('data', swingHook);
 
-
     if (accessory.context.device.hasLight) {
-      
       // Fan Light
       this.lightService = this.accessory.getService(this.platform.Service.Lightbulb)
         || this.accessory.addService(this.platform.Service.Lightbulb);
@@ -226,12 +243,5 @@ export class CeilingFanAccessory {
       this.platform.log.info('Retry in 1 minute');
       setTimeout(() => this.connect(device), 60000);
     }
-  }
-
-
-  toStep(percent: number) {
-    const validSpeeds = [0, 1, 2, 3, 4, 5];
-    const stepIndex = Math.floor(percent / 20); // 100 / 5 = 20
-    return validSpeeds[stepIndex];
   }
 }
