@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "Homebridge Ventair Skyfan DC Ceiling Fan",
   "name": "homebridge-ventair-ceiling-fan",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Homebridge plugin for Ventair Skyfan DC ceiling fan",
   "license": "Apache-2.0",
   "type": "commonjs",
@@ -14,8 +14,8 @@
     "url": "https://github.com/domalab/homebridge-ventair-ceiling-fan/issues"
   },
   "engines": {
-    "node": "^18.17.0 || ^20.9.0",
-    "homebridge": "^1.8.0"
+    "node": "^18.20.4 || ^20.15.1",
+    "homebridge": "^1.8.0 || ^2.0.0-beta.0"
   },
   "main": "dist/index.js",
   "scripts": {
